@@ -34,6 +34,8 @@ def filter_data(data):
                 entries = 2
             elif raw >= 40:
                 entries = 1
+            # elif raw <= 2:
+            #     entries = raw
             else:
                 entries = 0
 
