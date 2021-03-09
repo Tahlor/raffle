@@ -19,7 +19,7 @@ def get_google_sheets():
 def filter_data(data):
     # Get correct days
     # Get last week + 1 day
-    _, first_submission_time = get_week(offset=-8+OFFSET) # on the last day of the cycle
+    _, first_submission_time = get_week(offset=-7+OFFSET) # midnight on the last day of the cycle, (which is 24 hours before the cycle ends)
     last_possible_submission_time = datetime.now()
     first_submission_time = datetime.combine(first_submission_time, time(0, 0))
 
