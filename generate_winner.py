@@ -70,8 +70,7 @@ def main():
     ps += dict_to_str(raffle_dict,  header=["Name","Entries","Random Seed"])
     ps += dict_to_str(simulated_choices, "\n10,000 Simulations\n")
     ps += f"\n{seed_text}\n"
-    ps += f"""\nCode to reproduce:
-
+    ps += f"""
 import random, sys
 raffle_dict = {raffle_dict}
 rng = random.Random({seed})

@@ -8,8 +8,8 @@ import re
 PATH="https://docs.google.com/spreadsheets/d/1rJNa1GHmQOBsny7d0i9iddZ8obq12TTbNqR_AiZsFII/edit#gid=720625117"
 SHEET_ID = re.findall("(/d/)([A-Za-z0-9_)]+)", PATH)[0][1]
 SHEET_NAME = "Form Responses 1"
-#EMAIL_ADDRESSES = ["archibald@groups.io"]
-EMAIL_ADDRESSES = ['taylornarchibald@gmail.com']
+EMAIL_ADDRESSES = ["archibald@groups.io"]
+#EMAIL_ADDRESSES = ['taylornarchibald@gmail.com']
 OFFSET = 1 # 0 assumes a Monday-Sunday week
 REMINDER_SUBJ = "Archibald Healthy Lifestyle Challenge: Please report your point total for the week {} through {}"
 
