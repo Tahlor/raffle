@@ -23,23 +23,37 @@ def filter_data(data):
     # if there are multiple submissions, the most recent on in the valid timeframe is used
     print(data)
     for row in data[1:]:
-        date = datetime.strptime(row[0], "%m/%d/%Y %H:%M:%S")
-        if first_submission_time < date < last_possible_submission_time:
-            name = row[2]
-            raw = int(row[1])
-            entries = raw
+        if row:
+            date = datetime.strptime(row[0], "%m/%d/%Y %H:%M:%S")
+            if first_submission_time < date < last_possible_submission_time:
+                name = row[2]
+                raw = int(row[1])
+                entries = raw
 
-            if name in raffle_dict.keys():
-                warnings.warn(f"{name} already entered! Old: {raffle_dict[name]} New: {entries}")
-            # Add 0 random seed
-            if len(row) < 4:
-                row.append(0)
-            raffle_dict[name] = {"entries":entries, "seed":int(row[3])}
+                if name in raffle_dict.keys():
+                    warnings.warn(f"{name} already entered! Old: {raffle_dict[name]} New: {entries}")
+                # Add 0 random seed
+                if len(row) < 4:
+                    row.append(0)
+                raffle_dict[name] = {"entries":entries, "seed":int(row[3])}
     return raffle_dict, first_submission_time, last_possible_submission_time
 
-def perform_raffle(raffle_dict):
+def perform_raffle(raffle_dict, apply_penalties=APPLY_PENALTIES):
     keys = list(raffle_dict.keys())
-    values = [raffle_dict[key]["entries"] for key in raffle_dict.keys()]
+
+    penalties = load_penalty() if PENALTY.exists() else {}
+    penalties = initialize_penalty(raffle_dict.keys(), penalties)
+
+    raw_values = values = [raffle_dict[key]["entries"] for key in raffle_dict.keys()]
+
+    if apply_penalties:
+        values = [raffle_dict[key]["entries"]-penalties[key] for key in raffle_dict.keys()]
+        values = [i if i > 0 else 0 for i in values]
+
+        # Add the penalty in
+        for k,v in raffle_dict.items():
+            raffle_dict[k]["penalty"] = penalties[k]
+
     random_seeds = sum([raffle_dict[key]["seed"] for key in raffle_dict.keys()])
     tickets = sum(values)
     DATE = int(datetime.combine(datetime.today(), time.min).timestamp())
@@ -49,8 +63,13 @@ def perform_raffle(raffle_dict):
     seed_text = f"Tickets: {tickets}, Seeds: {random_seeds}, Date: {DATE}\n"
     seed_text+= f"( {tickets}*{DATE} + {random_seeds} ) % {sys.maxsize} = {seed} \n"
     choices = rng.choices(keys, values, k=10000)
+    winner = choices[0]
     simulated_choices = Counter(choices)
-    return choices[0], simulated_choices, seed, seed_text
+
+    if apply_penalties:
+        update_penalty(penalties, dict(zip(keys, raw_values)), winner)
+
+    return winner, simulated_choices, seed, seed_text, penalties
 
 def send_result(winner, post_script=""):
     start,end = get_formatted_start_end(offset=OFFSET-7)
@@ -59,16 +78,17 @@ def send_result(winner, post_script=""):
     return message
 
 def main():
+    simulated_choices, seed, seed_text, penalties = {}, "No Seed", "No Seed", load_penalty()
     csv = get_google_sheets()
     raffle_dict, begin_submit, end_submit = filter_data(csv)
     print(raffle_dict)
     if raffle_dict:
-        winner, simulated_choices, seed, seed_text = perform_raffle(raffle_dict)
+        winner, simulated_choices, seed, seed_text, penalties = perform_raffle(raffle_dict)
     else:
         winner = "OOPS! There were no eligble entries!"
     ps = f"\n\nBegin entries: {begin_submit.strftime('%m-%d-%Y %H:%M:%S')}\nEnd submission: {end_submit.strftime('%m-%d-%Y %H:%M:%S')}\n\n"
-    ps += dict_to_str(raffle_dict,  header=["Name","Entries","Random Seed"])
-    ps += dict_to_str(simulated_choices, "\n10,000 Simulations\n")
+    ps += dict_to_str(raffle_dict, message="\nRaffle Entries:\n", header=["Name","Entries","Random Seed", "Penalty"])
+    ps += dict_to_str(simulated_choices, message="\n10,000 Simulations\n")
     ps += f"\n{seed_text}\n"
     ps += f"""
 import random, sys
@@ -78,7 +98,7 @@ choice = rng.choices(list(raffle_dict.keys()), raffle_dict.values(), k=1)[0]
 print(choice)
 
             """
-
+    ps += dict_to_str(penalties, message="\nWinner Penalties\n")
     message = send_result(winner, post_script=ps)
     print(message)
 

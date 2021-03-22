@@ -4,15 +4,47 @@ from datetime import datetime, timedelta, date
 sys.path.append("../utils/general_tools")
 from my_email import email
 import re
+import numpy as np
+from pathlib import Path
 
+TESTING="testing"
+TESTING=""
 PATH="https://docs.google.com/spreadsheets/d/1rJNa1GHmQOBsny7d0i9iddZ8obq12TTbNqR_AiZsFII/edit#gid=720625117"
 SHEET_ID = re.findall("(/d/)([A-Za-z0-9_)]+)", PATH)[0][1]
 SHEET_NAME = "Form Responses 1"
-EMAIL_ADDRESSES = ["archibald@groups.io"]
-#EMAIL_ADDRESSES = ['taylornarchibald@gmail.com']
 OFFSET = 1 # 0 assumes a Monday-Sunday week
 REMINDER_SUBJ = "Archibald Healthy Lifestyle Challenge: Please report your point total for the week {} through {}"
+PENALTY = Path(f"./penalties{TESTING}.npy")
+APPLY_PENALTIES=False
+MAX_TICKETS = 3
 
+if not TESTING:
+    EMAIL_ADDRESSES = ["archibald@groups.io"]
+else:
+    EMAIL_ADDRESSES = ['taylornarchibald@gmail.com']
+
+def load_penalty():
+    if PENALTY.exists():
+        return np.load(PENALTY, allow_pickle=True).item()
+    else:
+        return {}
+
+def initialize_penalty(raffle_dict_keys, penalty={}):
+    for k in raffle_dict_keys:
+        if k not in penalty:
+            penalty[k] = 0
+    np.save(PENALTY, penalty)
+    return penalty
+
+def update_penalty(penalty, entries, winner=""):
+    print(penalty, entries)
+    for key,item in penalty.items():
+        if key != winner:
+            penalty[key] = penalty[key]/(MAX_TICKETS+1) * (MAX_TICKETS+1-entries[key])
+        elif key == winner:
+            penalty[key] = (1+penalty[key])/2
+    np.save(PENALTY, penalty)
+    return penalty
 
 def get_week(offset=0):
     """ Returns Monday through Sunday by default
@@ -51,6 +83,9 @@ def dict_to_html_table(in_dict, n=None, header=[]):
     """
         header (list): list of column names
     """
+    if not in_dict:
+        return "Dictionary was empty"
+
     if n is None:
         items = next(iter(in_dict.items()))
         # If the value is just a primiative
