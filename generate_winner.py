@@ -14,6 +14,7 @@ def get_google_sheets():
     return new_responses
 
 def filter_data(data):
+    # TIME, ENTRIES, NAME, SEED
     # Get correct days
     # Get last week + 1 day
     _, first_submission_time = get_week(offset=-7+OFFSET) # midnight on the last day of the cycle, (which is 24 hours before the cycle ends)
@@ -36,6 +37,7 @@ def filter_data(data):
                 if len(row) < 4:
                     row.append(0)
                 raffle_dict[name] = {"entries":entries, "seed":int(row[3])}
+    print(first_submission_time, last_possible_submission_time)
     return raffle_dict, first_submission_time, last_possible_submission_time
 
 def perform_raffle(raffle_dict, apply_penalties=APPLY_PENALTIES):

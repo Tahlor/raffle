@@ -6,13 +6,20 @@ import warnings
 from datetime import datetime, time, timedelta
 from generate_winner import *
 
-def perform_raffle(raffle_dict):
-    return random.choices(list(raffle_dict.keys()), raffle_dict.values(), k=1)[0]
+def remove_seed_from_raffle_dict(raffle_dict):
+    for k,v in raffle_dict.items():
+        if isinstance(v, dict):
+            if "seed" in v:
+                del v["seed"]
+    return raffle_dict
 
 def main():
     csv = get_google_sheets()
     raffle_dict, begin_submit, end_submit = filter_data(csv)
+    raffle_dict = remove_seed_from_raffle_dict(raffle_dict)
+
     print(raffle_dict)
+
 
     start,end = get_formatted_start_end(offset=OFFSET-7)
     subj = "RE: " + REMINDER_SUBJ.format(start,end)
