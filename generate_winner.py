@@ -7,7 +7,7 @@ import warnings
 from datetime import datetime, time, timedelta
 from collections import Counter
 
-
+SIMULATIONS=100000
 def get_google_sheets():
     new_responses = gsheets2.main(SHEET_ID, SHEET_NAME, r"./google_sheets/credentials_oauth2.json",
                                                        r"./google_sheets/token.pickle")
@@ -64,7 +64,7 @@ def perform_raffle(raffle_dict, apply_penalties=APPLY_PENALTIES):
     rng = random.Random(seed)
     seed_text = f"Tickets: {tickets}, Seeds: {random_seeds}, Date: {DATE}\n"
     seed_text+= f"( {tickets}*{DATE} + {random_seeds} ) % {sys.maxsize} = {seed} \n"
-    choices = rng.choices(keys, values, k=10000)
+    choices = rng.choices(keys, values, k=SIMULATIONS)
     winner = choices[0]
     simulated_choices = Counter(choices)
 
@@ -90,17 +90,22 @@ def main():
         winner = "OOPS! There were no eligble entries!"
     ps = f"\n\nBegin entries: {begin_submit.strftime('%m-%d-%Y %H:%M:%S')}\nEnd submission: {end_submit.strftime('%m-%d-%Y %H:%M:%S')}\n\n"
     ps += dict_to_str(raffle_dict, message="\nRaffle Entries:\n", header=["Name","Entries","Random Seed", "Penalty"])
-    ps += dict_to_str(simulated_choices, message="\n10,000 Simulations\n")
+    ps += dict_to_str(simulated_choices, message=f"\n{SIMULATIONS} Simulations\n")
     ps += f"\n{seed_text}\n"
     ps += f"""
 import random, sys
 raffle_dict = {raffle_dict}
 rng = random.Random({seed})
-choice = rng.choices(list(raffle_dict.keys()), raffle_dict.values(), k=1)[0]
+names = list(raffle_dict.keys())
+tickets = [raffle_dict[name]["entries"] for name in names]
+choice = rng.choices(names, tickets, k=1)[0]
 print(choice)
 
             """
-    ps += dict_to_str(penalties, message="\nWinner Penalties\n")
+    if APPLY_PENALTIES:
+        ps += dict_to_str(penalties, message="\nWinner Penalties\n")
+    
+    print("Winner: ", winner)
     message = send_result(winner, post_script=ps)
     print(message)
 
