@@ -12,7 +12,7 @@ There are 3 scripts: one that sends a soliciation email, another for a reminder,
 
 Parameters:
 
-* Day offsets -- assumed the raffle is weekly, how many days from Sunday does it start/end; only forms received during the specified window are counted
+* Day offsets -- assumed the raffle is weekly, how many days from Sunday does it start/end; only Google forms received during the specified window (e.g., the day before the reminder was sent and until the raffle is performed) are counted
 * Penalties -- experimental; if you want to fiddle with penalizing recent winners
 * Random seed -- So the person running the script can't choose a random seed to guarantee they win. Basically everyone submits a random number (except the person running the script), which is combined to generate the seed. The code to reproduce this result is included in the email.
 * Simulation -- the raffle is performed hypothetically many times so users can verify their tickets were counted appropriately
